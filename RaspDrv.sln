@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34902.65
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RaspDrv.ConsoleApp", "RaspDrv.Console\RaspDrv.ConsoleApp.csproj", "{BF358081-BDEE-451E-8C9D-637E7A18821C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RaspDrv.Com", "RaspDrv.Com\RaspDrv.Com.csproj", "{E70473C8-F3FF-4C12-96E8-708FED15B562}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Device.RaspDrv", "Device.RaspDrv\Device.RaspDrv.csproj", "{D75B7241-6833-4ED1-9E82-9BA76D1A1970}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BF358081-BDEE-451E-8C9D-637E7A18821C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BF358081-BDEE-451E-8C9D-637E7A18821C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BF358081-BDEE-451E-8C9D-637E7A18821C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BF358081-BDEE-451E-8C9D-637E7A18821C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E70473C8-F3FF-4C12-96E8-708FED15B562}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E70473C8-F3FF-4C12-96E8-708FED15B562}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E70473C8-F3FF-4C12-96E8-708FED15B562}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E70473C8-F3FF-4C12-96E8-708FED15B562}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D75B7241-6833-4ED1-9E82-9BA76D1A1970}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D75B7241-6833-4ED1-9E82-9BA76D1A1970}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D75B7241-6833-4ED1-9E82-9BA76D1A1970}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D75B7241-6833-4ED1-9E82-9BA76D1A1970}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1667F1FC-8A96-442D-986A-1E549CA86951}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "RaspDrv.ConsoleApp": {
+      "commandName": "Project",
+      "remoteDebugEnabled": true,
+      "remoteDebugMachine": "raspb:22",
+      "authenticationMode": "None"
+    }
+  }
+}
