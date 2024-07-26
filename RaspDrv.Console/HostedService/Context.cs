@@ -49,7 +49,7 @@ namespace RaspDrv.ConsoleApp.HostedService
         {
             var command = new DeviceCommandRequestBuilder()
                 .SetEventType(Device.RaspDrv.Helpers.Models.DeviceCommandTypeEnum.OpenDoor)
-                .SetCellNumber("133_1_2_3_4_13")
+                .SetCellNumber("133_1")
                 .Build();
 
             await _device.SendCommand(command);
