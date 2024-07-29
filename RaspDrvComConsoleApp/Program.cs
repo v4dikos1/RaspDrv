@@ -38,7 +38,7 @@ public class Program
                 .ConfigureServices((context, services) =>
                 {
                     services.AddHostedService<Context>();
-                    services.AddSingleton<ITagDeviceController, SerialPortMonitorService>();
+                    services.AddSingleton<ITagDeviceController, TagDeviceController>();
                     services.Configure<ComPortConfig>(context.Configuration.GetSection("ComPortConfiguration"));
                 })
                 .UseNLog()
