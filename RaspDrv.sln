@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RaspDrv.Com", "RaspDrv.Com\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Device.RaspDrv", "Device.RaspDrv\Device.RaspDrv.csproj", "{D75B7241-6833-4ED1-9E82-9BA76D1A1970}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RaspDrvComConsoleApp", "RaspDrvComConsoleApp\RaspDrvComConsoleApp.csproj", "{5ABF82B8-E034-4C3F-B84E-81296DCC6D67}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{D75B7241-6833-4ED1-9E82-9BA76D1A1970}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D75B7241-6833-4ED1-9E82-9BA76D1A1970}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D75B7241-6833-4ED1-9E82-9BA76D1A1970}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5ABF82B8-E034-4C3F-B84E-81296DCC6D67}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5ABF82B8-E034-4C3F-B84E-81296DCC6D67}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5ABF82B8-E034-4C3F-B84E-81296DCC6D67}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5ABF82B8-E034-4C3F-B84E-81296DCC6D67}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

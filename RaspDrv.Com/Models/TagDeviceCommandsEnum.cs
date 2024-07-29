@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace RaspDrv.Com;
+namespace RaspDrv.Com.Models;
 
 public enum TagDeviceCommandsEnum
 {

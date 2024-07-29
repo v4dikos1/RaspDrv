@@ -5,13 +5,16 @@ using Microsoft.Extensions.Logging;
 using NLog;
 using NLog.Extensions.Logging;
 using NLog.Web;
+using RaspDrv.Com;
+using RaspDrv.Com.Models;
+using RaspDrvComConsoleApp.HostedService;
 
-namespace RaspDrv.Com;
+namespace RaspDrvComConsoleApp;
 
 
 public class Program
 {
-    public static async Task Main(string[] args)
+    public static void Main(string[] args)
     {
         var logger = LogManager.Setup()
             .LoadConfigurationFromFile("nlog.config")
@@ -26,7 +29,7 @@ public class Program
                 {
                     logging.ClearProviders();
                     logging.SetMinimumLevel(Microsoft.Extensions.Logging.LogLevel.Trace);
-                    logging.AddNLog(); // Добавляем NLog как поставщика логов
+                    logging.AddNLog();
                 })
                 .ConfigureAppConfiguration((hostingContext, config) =>
                 {
@@ -34,12 +37,14 @@ public class Program
                 })
                 .ConfigureServices((context, services) =>
                 {
-                    services.AddHostedService<SerialPortMonitorService>();
+                    services.AddHostedService<Context>();
+                    services.AddSingleton<ITagDeviceController, SerialPortMonitorService>();
+                    services.Configure<ComPortConfig>(context.Configuration.GetSection("ComPortConfiguration"));
                 })
                 .UseNLog()
                 .Build();
 
-            await host.RunAsync();
+            host.Run();
         }
         catch (Exception ex)
         {

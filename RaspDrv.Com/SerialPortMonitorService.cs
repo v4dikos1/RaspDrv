@@ -1,66 +1,56 @@
 ﻿using System.Collections.Concurrent;
 using System.IO.Ports;
-using AutoGraph;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using RaspDrv.Com.Helpers;
+using RaspDrv.Com.Models;
 
 namespace RaspDrv.Com;
 
-public class SerialPortMonitorService(ILogger<SerialPortMonitorService> logger) : IHostedService, ITagDeviceController
+public class SerialPortMonitorService: ITagDeviceController, IDisposable
 {
-    private const string DirectoryPath = "/dev/serial/by-path";
-    private FileSystemWatcher? _watcher;
+    private readonly ILogger<SerialPortMonitorService> _logger;
+    private readonly ComPortConfig _config;
+    private readonly FileSystemWatcher? _watcher;
     private readonly ConcurrentDictionary<string, string> _connectedDevices = new();
+    private readonly ConcurrentDictionary<string, string> _symLinksDictionary = new();
     private SerialPort? _serialPort;
 
     public event EventHandler<TagDeviceEventModel>? OnEventReceived;
 
-    public Task StartAsync(CancellationToken cancellationToken)
+    public SerialPortMonitorService(ILogger<SerialPortMonitorService> logger, IOptions<ComPortConfig> config)
     {
+        _logger = logger;
+        _config = config.Value;
+
         logger.LogInformation("SerialPortMonitorService is starting.");
 
-        _watcher = new FileSystemWatcher(DirectoryPath)
+        _watcher = new FileSystemWatcher(config.Value.PortName)
         {
             EnableRaisingEvents = true
         };
         _watcher.Created += OnDeviceConnected;
         _watcher.Deleted += OnDeviceDisconnected;
-
-        return Task.CompletedTask;
-    }
-
-    public Task StopAsync(CancellationToken cancellationToken)
-    {
-        logger.LogInformation("SerialPortMonitorService is stopping.");
-
-        if (_watcher != null)
-        {
-            _watcher.Created -= OnDeviceConnected;
-            _watcher.Deleted -= OnDeviceDisconnected;
-            _watcher.Dispose();
-        }
-
-        return Task.CompletedTask;
     }
 
     private void OnDeviceConnected(object sender, FileSystemEventArgs e)
     {
-        var filePath = TrimTemSymbols(e.FullPath, 16);
+        var filePath = SymlinkResolver.TrimTempSymbols(e.FullPath, 16);
         Task.Run(() => HandleNewDevice(filePath));
     }
 
     private void OnDeviceDisconnected(object sender, FileSystemEventArgs e)
     {
-        var filePath = TrimTemSymbols(e.FullPath, 16);
-        var realPath = SymlinkResolver.GetRealPath(filePath);
-        if (_connectedDevices.TryRemove(realPath, out var serialNumber))
+        var filePath = SymlinkResolver.TrimTempSymbols(e.FullPath, 16);
+        _symLinksDictionary.TryGetValue(filePath, out var realPath);
+        if (realPath != null && _connectedDevices.TryRemove(realPath, out var serialNumber))
         {
             OnEventReceived?.Invoke(this, new TagDeviceEventModel
             {
                 EventType = TagDeviceEventEnum.OnDisconnected,
                 Data = serialNumber.Replace("SERNUM=", string.Empty)
             });
-            logger.LogInformation($"Device disconnected: {realPath}");
+            _logger.LogInformation($"Device disconnected: {serialNumber}");
         }
     }
 
@@ -72,53 +62,56 @@ public class SerialPortMonitorService(ILogger<SerialPortMonitorService> logger) 
 
             if (!File.Exists(realDevicePath))
             {
-                logger.LogError($"Real device path '{realDevicePath}' does not exist.");
+                _logger.LogError($"Real device path '{realDevicePath}' does not exist.");
                 return;
             }
 
             _serialPort?.Close();
 
-            _serialPort = new SerialPort(realDevicePath, 115200, Parity.None, 8, StopBits.One)
+            _serialPort = new SerialPort(realDevicePath, _config.BaudRate, Parity.None, 8, StopBits.One)
             {
                 ReadTimeout = 10000,
                 WriteTimeout = 10000
             };
             _serialPort.DataReceived += SerialPortDataReceived;
             _serialPort.Open();
-            logger.LogInformation($"Port opened successfully: {realDevicePath}");
+            _logger.LogInformation($"Port opened successfully: {realDevicePath}");
 
-            // Считывание серийного номера с метки
+            _symLinksDictionary[devicePath] = realDevicePath;
             SendCommandToDevice(TagDeviceCommandsEnum.GetSerialNumber);
         }
         catch (UnauthorizedAccessException ex)
         {
-            logger.LogError($"Access to the port '{devicePath}' is denied: {ex.Message}");
+            _logger.LogError($"Access to the port '{devicePath}' is denied: {ex.Message}");
         }
         catch (Exception ex)
         {
-            logger.LogError($"Error handling new device {devicePath}: {ex.Message}");
+            _logger.LogError($"Error handling new device {devicePath}: {ex.Message}");
         }
     }
 
-    public async Task SendCommand(TagDeviceCommandsEnum command, string serialNumber)
+    public Task GetChargeLevel(string serialNumber)
     {
         _serialPort?.Close();
 
         var path = _connectedDevices.SingleOrDefault(x => x.Value == serialNumber).Key;
         if (path == null)
         {
-            logger.LogError($"Device with serial number {serialNumber} not found.");
+            _logger.LogError($"Device with serial number {serialNumber} not found.");
+            return Task.CompletedTask;
         }
 
-        _serialPort = new SerialPort(path, 115200, Parity.None, 8, StopBits.One)
+        _serialPort = new SerialPort(path, _config.BaudRate, Parity.None, 8, StopBits.One)
         {
-            ReadTimeout = 10000,
-            WriteTimeout = 10000
+            ReadTimeout = 1000,
+            WriteTimeout = 1000
         };
         _serialPort.DataReceived += SerialPortDataReceived;
         _serialPort.Open();
 
-        SendCommandToDevice(command);
+        SendCommandToDevice(TagDeviceCommandsEnum.GetBatteryCharge);
+
+        return Task.CompletedTask;
     }
 
     private void SendCommandToDevice(TagDeviceCommandsEnum command)
@@ -148,7 +141,7 @@ public class SerialPortMonitorService(ILogger<SerialPortMonitorService> logger) 
         }
         catch (Exception ex)
         {
-            logger.LogError($"Error sending command '{command}' to port '{_serialPort?.PortName}': {ex.Message}");
+            _logger.LogError($"Error sending command '{command}' to port '{_serialPort?.PortName}': {ex.Message}");
         }
     }
 
@@ -157,24 +150,27 @@ public class SerialPortMonitorService(ILogger<SerialPortMonitorService> logger) 
         if (_serialPort is { IsOpen: true })
         {
             var response = _serialPort.ReadExisting();
-            logger.LogInformation($"Response from device: {response}");
+            _logger.LogInformation($"Response from device: {response}");
 
             if (response.Contains("SERNUM"))
             {
-                _connectedDevices[_serialPort.PortName] = response;
-                logger.LogInformation($"Device connected: {response}");
+                var serialNumber = response.Replace("SERNUM=", string.Empty).Replace(";", String.Empty);
+                _connectedDevices[_serialPort.PortName] = serialNumber;
+                _logger.LogInformation($"Device connected: {response}");
                 OnEventReceived?.Invoke(this, new TagDeviceEventModel
                 {
                     EventType = TagDeviceEventEnum.OnConnected,
-                    Data = response.Replace("SERNUM=", string.Empty)
+                    Data = serialNumber
                 });
             }
-            else if (response.Contains("GBATTCHARGE"))
+            else if (response.Contains("BATTCHARGE"))
             {
+                var charge = response.Replace("BATTCHARGE=", string.Empty).Replace(";", string.Empty);
+                _logger.LogInformation($"Device {_connectedDevices[_serialPort.PortName]} charge level: {charge}");
                 OnEventReceived?.Invoke(this, new TagDeviceEventModel
                 {
                     EventType = TagDeviceEventEnum.OnChargeReceived,
-                    Data = response.Replace("GBATTCHARGE=", string.Empty)
+                    Data = charge
                 });
             }
 
@@ -182,29 +178,16 @@ public class SerialPortMonitorService(ILogger<SerialPortMonitorService> logger) 
         }
     }
 
-    // FileSystemWatcher при считывании файлов, являющихся символьными ссылками
-    // (которыми являются в том числе и записи о подключенных метках), добавляет в начало имени
-    // файла .# и в конец имени суффикс из 16 символов.
-    // Для дальнейшей работы с файлом ненужные символы обрезаются
-    private string TrimTemSymbols(string str, int positionFromEnd)
+    public void Dispose()
     {
-        if (string.IsNullOrEmpty(str) || str.Length < positionFromEnd)
+        _logger.LogInformation("SerialPortMonitorService is stopping.");
+
+        if (_watcher != null)
         {
-            return str;
+            _watcher.Created -= OnDeviceConnected;
+            _watcher.Deleted -= OnDeviceDisconnected;
+            _watcher.Dispose();
         }
-
-        if (str.Contains(".#"))
-        {
-            str = str.Replace(".#", string.Empty);
-            var indexFromEnd = positionFromEnd - 1;
-            var index = str.Length - 1 - indexFromEnd;
-
-            if (index >= 0)
-            {
-                return str.Substring(0, index);
-            }
-        }
-
-        return str;
+        _serialPort?.Dispose();
     }
 }
