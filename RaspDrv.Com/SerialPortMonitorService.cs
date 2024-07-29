@@ -154,7 +154,7 @@ public class SerialPortMonitorService: ITagDeviceController, IDisposable
 
             if (response.Contains("SERNUM"))
             {
-                var serialNumber = response.Replace("SERNUM=", string.Empty).Replace(";", String.Empty);
+                var serialNumber = response.Replace("SERNUM=", string.Empty).Replace(";", string.Empty);
                 _connectedDevices[_serialPort.PortName] = serialNumber;
                 _logger.LogInformation($"Device connected: {response}");
                 OnEventReceived?.Invoke(this, new TagDeviceEventModel
