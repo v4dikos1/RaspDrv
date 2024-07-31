@@ -10,14 +10,27 @@ public class TagDeviceController : ITagDeviceController, IDisposable
     private readonly DeviceManager _deviceManager;
     private readonly FileSystemMonitor _fileSystemMonitor;
     private readonly CancellationTokenSource _cancellationTokenSource = new();
+    private EventHandler<TagDeviceEventModel>? _onEventReceived;
 
-    public event EventHandler<TagDeviceEventModel>? OnEventReceived;
+    public event EventHandler<TagDeviceEventModel>? OnEventReceived
+    {
+        add
+        {
+            _onEventReceived += value;
+            _deviceManager.SetEventHandler(_onEventReceived);
+        }
+        remove
+        {
+            _onEventReceived -= value;
+            _deviceManager.SetEventHandler(_onEventReceived);
+        }
+    }
 
     public TagDeviceController(ILogger<TagDeviceController> logger, IOptions<ComPortConfig> config)
     {
         _logger = logger;
 
-        _deviceManager = new DeviceManager(logger, config.Value, OnEventReceived);
+        _deviceManager = new DeviceManager(logger, config.Value, _onEventReceived);
         _fileSystemMonitor = new FileSystemMonitor(logger, config.Value, _deviceManager);
 
         _deviceManager.InitializeDevices();

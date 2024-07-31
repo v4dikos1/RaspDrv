@@ -35,12 +35,20 @@ internal class FileSystemMonitor(ILogger<TagDeviceController> logger, ComPortCon
     private void InitializeDeviceWatcher()
     {
         _deviceWatcher?.Dispose();
-        _deviceWatcher = new FileSystemWatcher(config.PortName)
+        try
         {
-            EnableRaisingEvents = true
-        };
-        _deviceWatcher.Created += OnDeviceConnected;
-        _deviceWatcher.Deleted += OnDeviceDisconnected;
+            _deviceWatcher = new FileSystemWatcher(config.PortName)
+            {
+                EnableRaisingEvents = true
+            };
+            _deviceWatcher.Created += OnDeviceConnected;
+            _deviceWatcher.Deleted += OnDeviceDisconnected;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError("Error during creating FileSystemWatcher: {Message}", ex.Message);
+        }
+
     }
 
     private void OnRootCreatedOrDeleted(object sender, FileSystemEventArgs e)

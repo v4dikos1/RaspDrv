@@ -46,6 +46,11 @@ internal class DeviceManager(ILogger<TagDeviceController> logger, ComPortConfig 
         }
     }
 
+    public void SetEventHandler(EventHandler<TagDeviceEventModel>? eventHandler)
+    {
+        onEventReceived = eventHandler;
+    }
+
     /// <summary>
     ///  Получение уровня заряда метки
     /// </summary>
