@@ -15,6 +15,11 @@ internal class FileSystemMonitor(ILogger<TagDeviceController> logger, ComPortCon
     // и _deviceWatcher более не будет отслеживать изменения в папке даже при ее дальнейшем пересоздании.
     private FileSystemWatcher? _rootWatcher;
 
+    // Интервал "Стабильности системы". После создания корневой папки необходим небольшой интервал времени для того, чтобы файловая система "устоялась":
+    // FileSystemWatcher может прислать событие о том, что корневая папка была создана, но при попытке обращения к этой папке будет валиться ошибка о том,
+    // что папки не существует. Выждав интервал, ошибки вызываться не будет
+    private readonly int _stabilityInterval = 100;
+
     public void Initialize()
     {
         InitializeRootWatcher();
@@ -32,7 +37,7 @@ internal class FileSystemMonitor(ILogger<TagDeviceController> logger, ComPortCon
         _rootWatcher.Deleted += OnRootCreatedOrDeleted;
     }
 
-    private void InitializeDeviceWatcher()
+    private bool InitializeDeviceWatcher()
     {
         _deviceWatcher?.Dispose();
         try
@@ -43,15 +48,16 @@ internal class FileSystemMonitor(ILogger<TagDeviceController> logger, ComPortCon
             };
             _deviceWatcher.Created += OnDeviceConnected;
             _deviceWatcher.Deleted += OnDeviceDisconnected;
+            return true;
         }
         catch (Exception ex)
         {
             logger.LogError("Error during creating FileSystemWatcher: {Message}", ex.Message);
+            return false;
         }
-
     }
 
-    private void OnRootCreatedOrDeleted(object sender, FileSystemEventArgs e)
+    private async void OnRootCreatedOrDeleted(object sender, FileSystemEventArgs e)
     {
         if (e.FullPath.Equals("/dev/serial", StringComparison.OrdinalIgnoreCase))
         {
@@ -60,11 +66,12 @@ internal class FileSystemMonitor(ILogger<TagDeviceController> logger, ComPortCon
             // При пересоздании корневой папки, инициализируем _deviceWatcher заново
             if (e.ChangeType == WatcherChangeTypes.Created)
             {
+                await Task.Delay(_stabilityInterval);
+                InitializeDeviceWatcher();
+
                 // Необходимо проверить, не были ли добавлены новые файлы в папку в момент пересоздания _deviceWatcher.
                 // Корневая папка создается в момент добавления нового файла (при подключении устройства).
                 deviceManager.InitializeDevices();
-
-                InitializeDeviceWatcher();
             }
         }
     }

@@ -63,12 +63,12 @@ namespace Device.RaspDrv.Helpers
 
         private string ConvertCellNumberToHex(List<ushort> cellNumberList)
         {
-            var u_mask = (ushort)0b1111_1111_1111_1111;
+            var u_mask = (ushort)0b0000_0000_0000_0000;
 
-            //foreach (var cellNumber in cellNumberList)
-            //{
-            //    u_mask |= (ushort)(1 << cellNumber - 1);
-            //}
+            foreach (var cellNumber in cellNumberList)
+            {
+                u_mask |= (ushort)(1 << cellNumber - 1);
+            }
 
             var result_bytes = BitConverter.GetBytes(u_mask);
 
